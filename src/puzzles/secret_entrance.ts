@@ -2,7 +2,10 @@ import assert from "assert";
 import type { AoCModule } from "../types";
 import fs from "fs/promises";
 
-export async function secret_entrance(mod: AoCModule) {
+export async function secret_entrance(
+  mod: AoCModule,
+  arena: number
+): Promise<number> {
   const data = await fs.readFile("data/secret_entrance.txt");
   const txt = data.toString();
   const rotations = txt.split("\n").map((r) => {
@@ -15,11 +18,12 @@ export async function secret_entrance(mod: AoCModule) {
   });
   const len = rotations.length;
   const rotFlat = rotations.flatMap((x) => x);
-  const listPtr = 0;
+  const listPtr = arena;
 
-  new Int32Array(mod.memory.buffer).set(rotFlat, listPtr);
-
+  new Int32Array(mod.memory.buffer).set(rotFlat, listPtr / 4);
   const answer = mod.secret_entrance(listPtr, len);
 
   console.log(`Secret Entrance Password: ${answer}`);
+
+  return len * 8; // return size
 }
