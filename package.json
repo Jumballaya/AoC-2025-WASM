@@ -1,0 +1,17 @@
+{
+  "name": "aoc-2025",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "wat2wasm -o build/aoc.wasm src/aoc.wat",
+    "start": "npm run build && node src/main.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^24.10.1"
+  }
+}
