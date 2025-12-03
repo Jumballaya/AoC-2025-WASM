@@ -1,8 +1,9 @@
 (module
   (import "console" "log64" (func $log64 (param i64)))
+  (import "console" "log32" (func $log32 (param i32)))
 
   
-  (memory $memory (export "memory") 16) ;; 16K * 16 = 256K
+  (memory $memory (export "memory") 64) ;; 16K * 64 = 1M
 
 
   ;;
@@ -194,29 +195,22 @@
     (local $lower i64)
     (local $upper i64)
 
-    ;; let count = count_digits(n);
     (local.set $count (call $count_digits (local.get $n)))
     
-    ;; if (count % 2 != 0)
     (if (i64.ne (i64.rem_u (local.get $count) (i64.const 2)) (i64.const 0))
-      ;; return false;
       (return (i32.const 0))
     )
     
-    ;; size = count / 2;
     (local.set $size (i64.div_u (local.get $count) (i64.const 2)))
 
-    ;; let lower = extract_number(n, 0, size);
     (local.set $lower
       (call $extract_number (local.get $n) (i64.const 0) (local.get $size))
     )
 
-    ;; let upper = extract_number(n, size, size)
     (local.set $upper
       (call $extract_number (local.get $n) (local.get $size) (local.get $size))
     )
-
-    ;; return lower == upper;
+    
     (return (i64.eq (local.get $lower) (local.get $upper)))
   )
 
@@ -328,12 +322,152 @@
       )
     )
 
-    ;; Remove digits to the left of the desired segment: n % 10^(start+len)
     (local.set $temp (i64.rem_s
       (local.get $n)  (local.get $power_end))
     )
 
-    ;; Remove digits to the right of the desired segment: (n % 10^(start+len)) / 10^start
     (i64.div_s (local.get $temp) (local.get $power_start))
+  )
+
+  ;;
+  ;;  ---- Day 3 ---- Lobby
+  ;;
+  ;;  JS creates the string structs, loads the string data and the struct data
+  ;;  into memory
+  ;;
+  ;;  struct string {
+  ;;    ptr: i32;
+  ;;    len: i32;
+  ;;  }
+  ;;
+  ;;  fn lobby(banks: string[], len: i32): i32 {
+  ;;    let joltage = 0;
+  ;;    for (let i = 0; i < len; i++) {
+  ;;      joltage += largest_joltage(banks[i]);
+  ;;    }
+  ;;    return joltage;
+  ;;  }
+  ;;
+  ;;
+  (func $lobby (export "lobby") (param $banks i32) (param $len i32) (result i32)
+    (local $joltage i32)
+    (local $i i32)
+    (local $ptr i32)
+
+    (local.set $ptr (local.get $banks))
+
+    (block $main_block
+      (loop $main_loop
+        (br_if $main_block (i32.ge_u (local.get $i) (local.get $len)))
+
+        (local.set $joltage (i32.add (local.get $joltage) (call $largest_joltage (local.get $ptr))))
+
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (local.set $ptr (i32.add (local.get $ptr) (i32.const 8)))
+        (br $main_loop)
+      )
+    )
+
+    (return (local.get $joltage))
+  )
+
+  ;;
+  ;;
+  ;;  fn largest_joltage(s: string): i32 {
+  ;;    let tens = 0;
+  ;;    let ones = 0;
+  ;;    for (let i = 0; i < s.len - 1; ++i) {
+  ;;      let n = to_number(s[i]);
+  ;;      if (n > tens) {
+  ;;        tens = n;
+  ;;        ones = 0;
+  ;;        continue;
+  ;;      }
+  ;;      if (n > ones) {
+  ;;        ones = n;
+  ;;      }
+  ;;    }
+  ;;
+  ;;    let n = to_numbers(s[last]);
+  ;;    if (n > ones) {
+  ;;      ones = n;
+  ;;    }
+  ;;
+  ;;    return (tens * 10) + ones;
+  ;;  }
+  ;;
+  ;;
+  (func $largest_joltage (param $s i32) (result i32)
+    (local $tens i32)
+    (local $ones i32)
+    (local $i i32)
+    (local $n i32)
+    (local $len i32)
+    (local $ptr i32)
+    (local $c i32)
+
+    (local.set $len (i32.load (i32.add (local.get $s) (i32.const 4))))
+    (local.set $ptr (i32.load (local.get $s)))
+
+    (local.set $c (i32.load8_u (local.get $ptr)))
+
+    (block $main_block
+      (loop $main_loop
+        ;; for (;i < len - 1;)
+        (br_if $main_block (i32.ge_u (local.get $i) (i32.sub (local.get $len) (i32.const 1))))
+
+        ;; n = to_number(c);
+        (local.set $n (call $to_number (local.get $c)))
+        
+        ;; if (n > tens) 
+        (if (i32.gt_u (local.get $n) (local.get $tens))
+          (then
+            (local.set $tens (local.get $n))
+            (local.set $ones (i32.const 0))
+
+            (local.set $i (i32.add (local.get $i) (i32.const 1)))
+            (local.set $ptr (i32.add (local.get $ptr) (i32.const 1)))
+            (local.set $c (i32.load8_u (local.get $ptr)))
+            (br $main_loop)
+          )
+        )
+
+        ;; if (n > ones) 
+        (if (i32.gt_u (local.get $n) (local.get $ones))
+          (then
+            (local.set $ones (local.get $n))
+          )
+        )
+      
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (local.set $ptr (i32.add (local.get $ptr) (i32.const 1)))
+        (local.set $c (i32.load8_u (local.get $ptr)))
+        (br $main_loop)
+      )
+    )
+
+    ;; check last number 
+    (local.set $n (call $to_number (local.get $c)))
+    ;; if (n > ones) 
+    (if (i32.gt_u (local.get $n) (local.get $ones))
+      (then
+        (local.set $ones (local.get $n))
+      )
+    )
+
+    (return (i32.add (i32.mul (local.get $tens) (i32.const 10)) (local.get $ones)))
+  )
+
+  ;;
+  ;;
+  ;;  Convert from ascii number -> number (48: 0, 57: 9)
+  ;;
+  ;;  fn toNumber(c: i8): i32 {
+  ;;    return c - 48;
+  ;;  }
+  ;;
+  ;;
+  (func $to_number (param $c i32) (result i32)
+    (return (i32.sub (local.get $c) (i32.const 48)))
   )
 )

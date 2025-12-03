@@ -8,6 +8,9 @@ export async function loadModule(): Promise<AoCModule> {
       log64: (n: number) => {
         console.log(n);
       },
+      log32: (n: number) => {
+        console.log(n);
+      },
     },
   });
   const mod = instance.exports as AoCModule;

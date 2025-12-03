@@ -1,13 +1,11 @@
 import { loadModule } from "./loader.ts";
 import { gift_shop } from "./puzzles/gift_shop.ts";
+import { lobby } from "./puzzles/lobby.ts";
 import { secret_entrance } from "./puzzles/secret_entrance.ts";
 import type { PuzzleFn } from "./types.ts";
+import { alignup } from "./utils.ts";
 
-const puzzles: PuzzleFn[] = [secret_entrance, gift_shop];
-
-function alignup(n: number, a: number): number {
-  return n + (a - (n % a));
-}
+const puzzles: PuzzleFn[] = [secret_entrance, gift_shop, lobby];
 
 async function main() {
   const mod = await loadModule();
